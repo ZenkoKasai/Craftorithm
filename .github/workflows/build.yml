@@ -1,0 +1,33 @@
+name: Build Craftorithm
+
+on:
+  push:
+    branches: [ "main" ]    # or "master" if that's your default
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:        # allows manual runs from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'           # matches build.gradle.kts (Java 21)
+          distribution: 'temurin'
+
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v3
+        with:
+          arguments: clean build       # build task depends on shadowJar
+
+      - name: Upload plugin jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Craftorithm-jar
+          path: build/libs/*.jar       # includes Craftorithm-<version>.jar
