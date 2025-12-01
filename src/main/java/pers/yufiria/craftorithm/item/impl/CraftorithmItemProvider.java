@@ -106,7 +106,8 @@ public enum CraftorithmItemProvider implements ItemProvider, BukkitLifeCycleTask
             Set<String> itemKeySet = itemFile.config().getKeys(false);
             for (String itemKey : itemKeySet) {
                 try {
-                    ItemStack item = itemFile.config().getItemStack(itemKey);
+                    String base64 = itemFile.config().getString(itemKey);
+                    ItemStack item = decodeItemFromBase64(base64);
                     if (item == null) {
                         throw new NullPointerException("Item " + itemKey + " is null");
                     }
@@ -132,6 +133,7 @@ public enum CraftorithmItemProvider implements ItemProvider, BukkitLifeCycleTask
         } else {
             itemConfigWrapper = itemConfigFileMap.get(namespace);
         }
+        String base64 = encodeItemToBase64(item);
         itemConfigWrapper.set(itemName, item);
         itemConfigWrapper.saveConfig();
         String key = namespace + ":" + itemName;
