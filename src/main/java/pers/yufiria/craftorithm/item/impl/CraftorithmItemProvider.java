@@ -19,6 +19,13 @@ import pers.yufiria.craftorithm.item.NamespacedItemIdStack;
 import pers.yufiria.craftorithm.util.CollectionsUtils;
 import pers.yufiria.craftorithm.util.LangUtils;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Base64;
+import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.util.io.BukkitObjectOutputStream;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
@@ -119,7 +126,7 @@ public enum CraftorithmItemProvider implements ItemProvider, BukkitLifeCycleTask
             }
         }
     }
-
+    
 
     public NamespacedItemIdStack regCraftorithmItem(String namespace, String itemName, ItemStack item) {
         BukkitConfigWrapper itemConfigWrapper;
@@ -134,7 +141,7 @@ public enum CraftorithmItemProvider implements ItemProvider, BukkitLifeCycleTask
             itemConfigWrapper = itemConfigFileMap.get(namespace);
         }
         String base64 = encodeItemToBase64(item);
-        itemConfigWrapper.set(itemName, item);
+        itemConfigWrapper.set(itemName, base64);
         itemConfigWrapper.saveConfig();
         String key = namespace + ":" + itemName;
         itemMap.put(key, item);
@@ -145,6 +152,46 @@ public enum CraftorithmItemProvider implements ItemProvider, BukkitLifeCycleTask
             ),
             item.getAmount()
         );
+    }
+    // --- Base64 Encode / Decode for ItemStack --- //
+
+    private @Nullable ItemStack decodeItemFromBase64(@Nullable String base64) {
+        if (base64 == null || base64.isEmpty()) {
+            return null;
+        }
+    
+        try {
+            byte[] data = Base64.getDecoder().decode(base64);
+    
+            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
+                 BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream)) {
+    
+                Object object = dataInput.readObject();
+                if (object instanceof ItemStack) {
+                    return (ItemStack) object;
+                }
+    
+                return null;
+            }
+    
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    private @NotNull String encodeItemToBase64(@NotNull ItemStack item) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+             BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream)) {
+    
+            dataOutput.writeObject(item);
+            dataOutput.flush();
+    
+            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+    
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to encode ItemStack to base64", e);
+        }
     }
 
     public Map<String, ItemStack> itemMap() {
